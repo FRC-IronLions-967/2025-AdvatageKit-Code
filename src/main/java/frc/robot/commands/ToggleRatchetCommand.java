@@ -4,46 +4,33 @@
 
 package frc.robot.commands;
 
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.path.GoalEndState;
-import com.pathplanner.lib.path.PathPlannerPath;
-import com.pathplanner.lib.path.Waypoint;
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
-import frc.robot.subsystems.drive.Drive;
-import java.util.List;
+import frc.robot.subsystems.ClimberSubsystem;
 
 /* You should consider using the more terse Command factories API instead https://docs.wpilib.org/en/stable/docs/software/commandbased/organizing-command-based.html#defining-commands */
-public class GoToPoseCommand extends Command {
+public class ToggleRatchetCommand extends Command {
+  /** Creates a new ToggleRatchetCommand. */
+  private ClimberSubsystem climberSubsystem;
 
-  private Drive drive;
-
-  private Pose2d pose;
-  private List<Waypoint> pathWaypoints;
-  private PathPlannerPath pathToDestination;
-
-  /** Creates a new GoToPoseCommand. */
-  public GoToPoseCommand(Drive drive, Pose2d pose) {
-    this.drive = drive;
-    addRequirements(drive);
+  public ToggleRatchetCommand(ClimberSubsystem climberSubsystem) {
+    this.climberSubsystem = climberSubsystem;
     // Use addRequirements() here to declare subsystem dependencies.
-    this.pose = pose;
+    addRequirements(climberSubsystem);
   }
 
   // Called when the command is initially scheduled.
   @Override
-  public void initialize() {
-    pathWaypoints = PathPlannerPath.waypointsFromPoses(drive.getPose(), pose);
-    pathToDestination =
-        new PathPlannerPath(
-            pathWaypoints, Constants.pathConstraints, null, new GoalEndState(0, null));
-  }
+  public void initialize() {}
 
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    AutoBuilder.followPath(pathToDestination);
+    if (climberSubsystem.isRatchetOn()) {
+      climberSubsystem.moveRatchet(Constants.climberRatchetOnPosition);
+    } else {
+      climberSubsystem.moveRatchet(Constants.climberRatchetOffPosition);
+    }
   }
 
   // Called once the command ends or is interrupted.

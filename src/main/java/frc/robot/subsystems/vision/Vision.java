@@ -63,7 +63,7 @@ public class Vision extends SubsystemBase {
     return inputs[cameraIndex].latestTargetObservation.tx();
   }
 
-   /**
+  /**
    * Returns the Y angle to the best target, which can be used for simple servoing with vision.
    *
    * @param cameraIndex The index of the camera to use.

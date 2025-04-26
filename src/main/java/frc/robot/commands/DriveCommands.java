@@ -31,7 +31,6 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveConstants;
 import frc.robot.subsystems.vision.Vision;
-
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.LinkedList;
@@ -160,11 +159,11 @@ public class DriveCommands {
   }
 
   public static Command driveTowardsObjectCommand(
-    Drive drive, 
-    Vision vision, 
-    DoubleSupplier xSupplier, 
-    DoubleSupplier ySupplier,
-    double driveSpeed/*0 to 1*/) {
+      Drive drive,
+      Vision vision,
+      DoubleSupplier xSupplier,
+      DoubleSupplier ySupplier,
+      double driveSpeed /*0 to 1*/) {
 
     // Create PID controller
     ProfiledPIDController angleController =
@@ -182,7 +181,8 @@ public class DriveCommands {
               if (Math.abs(angleToObject.getRadians()) > 0.1) {
                 // Get linear velocity
                 Translation2d linearVelocity =
-                getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
+                    getLinearVelocityFromJoysticks(
+                        xSupplier.getAsDouble(), ySupplier.getAsDouble());
 
                 // Calculate angular speed
                 double omega =
@@ -206,9 +206,9 @@ public class DriveCommands {
                             : drive.getRotation()));
               } else {
                 Translation2d linearVelocity =
-                getLinearVelocityFromJoysticks(
-                              driveSpeed * Math.sin(drive.getPose().getRotation().getRadians()),
-                              driveSpeed * Math.cos(drive.getPose().getRotation().getRadians()));
+                    getLinearVelocityFromJoysticks(
+                        driveSpeed * Math.sin(drive.getPose().getRotation().getRadians()),
+                        driveSpeed * Math.cos(drive.getPose().getRotation().getRadians()));
 
                 // Calculate angular speed
                 double omega =
@@ -234,9 +234,8 @@ public class DriveCommands {
             },
             drive)
 
-            // Reset PID controller when command starts
-            .beforeStarting(() -> angleController.reset(drive.getRotation().getRadians()));
-
+        // Reset PID controller when command starts
+        .beforeStarting(() -> angleController.reset(drive.getRotation().getRadians()));
   }
 
   /**

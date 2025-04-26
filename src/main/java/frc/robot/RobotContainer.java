@@ -16,26 +16,32 @@ package frc.robot;
 import static frc.robot.subsystems.vision.VisionConstants.*;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
+import frc.robot.commands.MoveClimberInCommand;
+import frc.robot.commands.MoveClimberOutCommand;
+import frc.robot.commands.MoveWholeArmToPositionCommand;
+import frc.robot.commands.RunAlgaeManipulatorCommand;
+import frc.robot.commands.RunCoralManipulatorCommand;
+import frc.robot.commands.ScoreAlgaeManipulatorCommand;
+import frc.robot.commands.ToggleRatchetCommand;
+import frc.robot.subsystems.ArmSubsystem;
+import frc.robot.subsystems.ClimberSubsystem;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIONavX;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOSpark;
-import frc.robot.subsystems.vision.Vision;
-import frc.robot.subsystems.vision.VisionConstants;
-import frc.robot.subsystems.vision.VisionIO;
-import frc.robot.subsystems.vision.VisionIOPhotonVision;
-import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -47,10 +53,13 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 public class RobotContainer {
   // Subsystems
   private final Drive drive;
-  private final Vision vision;
+  //   private final Vision vision;
+  private final ArmSubsystem arm;
+  private final ClimberSubsystem climber;
 
   // Controller
-  private final CommandXboxController controller = new CommandXboxController(0);
+  private final CommandXboxController driverController = new CommandXboxController(0);
+  private final CommandXboxController operatorController = new CommandXboxController(1);
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser;
@@ -68,12 +77,15 @@ public class RobotContainer {
                 new ModuleIOSpark(2),
                 new ModuleIOSpark(3));
 
-        vision =
-            new Vision(
-                drive::addVisionMeasurement,
-                new VisionIOPhotonVision(camera0Name, VisionConstants.robotToCamera0),
-                new VisionIOPhotonVision(camera1Name, VisionConstants.robotToCamera1),
-                new VisionIOPhotonVision(objectDetectionCameraName, VisionConstants.robotToODcamera));
+        // vision =
+        //     new Vision(
+        //         drive::addVisionMeasurement,
+        //         new VisionIOPhotonVision(camera0Name, VisionConstants.robotToCamera0),
+        //         new VisionIOPhotonVision(camera1Name, VisionConstants.robotToCamera1),
+        //         new VisionIOPhotonVision(
+        //             objectDetectionCameraName, VisionConstants.robotToODcamera));
+        arm = new ArmSubsystem();
+        climber = new ClimberSubsystem();
         break;
 
       case SIM:
@@ -86,12 +98,15 @@ public class RobotContainer {
                 new ModuleIOSim(),
                 new ModuleIOSim());
 
-        vision =
-            new Vision(
-                drive::addVisionMeasurement,
-                new VisionIOPhotonVisionSim(camera0Name, robotToCamera0, drive::getPose),
-                new VisionIOPhotonVisionSim(camera1Name, robotToCamera1, drive::getPose),
-                new VisionIOPhotonVisionSim(objectDetectionCameraName, robotToODcamera, drive::getPose));
+        // vision =
+        //     new Vision(
+        //         drive::addVisionMeasurement,
+        //         new VisionIOPhotonVisionSim(camera0Name, robotToCamera0, drive::getPose),
+        //         new VisionIOPhotonVisionSim(camera1Name, robotToCamera1, drive::getPose),
+        //         new VisionIOPhotonVisionSim(
+        //             objectDetectionCameraName, robotToODcamera, drive::getPose));
+        arm = new ArmSubsystem();
+        climber = new ClimberSubsystem();
         break;
 
       default:
@@ -104,11 +119,42 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {});
 
-        vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
+        // vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
+        arm = new ArmSubsystem();
+        climber = new ClimberSubsystem();
         break;
     }
 
     // Set up auto routines
+    NamedCommands.registerCommand(
+        "L4Position",
+        new MoveWholeArmToPositionCommand(arm, Constants.L4ElevatorPosition, Constants.L4ArmAngle));
+    NamedCommands.registerCommand(
+        "L3Position",
+        new MoveWholeArmToPositionCommand(
+            arm, Constants.L3ElevatorPosition, Constants.L2L3ArmAngle));
+    NamedCommands.registerCommand(
+        "L2Position",
+        new MoveWholeArmToPositionCommand(
+            arm, Constants.L2ElevatorPosition, Constants.L2L3ArmAngle));
+    NamedCommands.registerCommand(
+        "L3Algae",
+        new MoveWholeArmToPositionCommand(
+            arm, Constants.L3AlgaeElevatorPosition, Constants.reefAlgaeAngle));
+    NamedCommands.registerCommand(
+        "L2Algae",
+        new MoveWholeArmToPositionCommand(
+            arm, Constants.L3AlgaeElevatorPosition, Constants.reefAlgaeAngle));
+    NamedCommands.registerCommand(
+        "coralStationPosition",
+        new MoveWholeArmToPositionCommand(
+            arm, Constants.coralElevatorPosition, Constants.coralArmAngle));
+    NamedCommands.registerCommand(
+        "IntakeCoral", new RunCoralManipulatorCommand(arm, Constants.coralIntakeSpeed));
+    NamedCommands.registerCommand(
+        "IntakeAlgae", new RunAlgaeManipulatorCommand(arm, Constants.algaeIntakeSpeed));
+    NamedCommands.registerCommand(
+        "PlaceCoral", new RunCoralManipulatorCommand(arm, Constants.coralScoringSpeed));
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
 
     // Set up SysId routines
@@ -138,30 +184,42 @@ public class RobotContainer {
    * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
    */
   private void configureButtonBindings() {
+
+    Command intakeCoralCommand =
+        new SequentialCommandGroup(
+            new MoveWholeArmToPositionCommand(
+                arm, Constants.coralElevatorPosition, Constants.coralArmAngle),
+            new RunCoralManipulatorCommand(arm, Constants.coralIntakeSpeed));
+
+    Command intakeAlgaeL3 =
+        new SequentialCommandGroup(
+            new MoveWholeArmToPositionCommand(
+                arm, Constants.L3AlgaeElevatorPosition, Constants.reefAlgaeAngle),
+            new RunAlgaeManipulatorCommand(arm, Constants.algaeIntakeSpeed));
+
+    Command intakeAlgaeL2 =
+        new SequentialCommandGroup(
+            new MoveWholeArmToPositionCommand(
+                arm, Constants.L2AlgaeElevatorPosition, Constants.reefAlgaeAngle),
+            new RunAlgaeManipulatorCommand(arm, Constants.algaeIntakeSpeed));
+
+    Command intakeAlgaeLolipop =
+        new SequentialCommandGroup(
+            new MoveWholeArmToPositionCommand(
+                arm, Constants.processorElevatorPosition, Constants.processorAlgaeAngle),
+            new RunAlgaeManipulatorCommand(arm, Constants.algaeIntakeSpeed));
+
     // Default command, normal field-relative drive
     drive.setDefaultCommand(
         DriveCommands.joystickDrive(
             drive,
-            () -> -controller.getLeftY(),
-            () -> -controller.getLeftX(),
-            () -> -controller.getRightX()));
-
-    // Lock to 0° when A button is held
-    controller
-        .a()
-        .whileTrue(
-            DriveCommands.joystickDriveAtAngle(
-                drive,
-                () -> -controller.getLeftY(),
-                () -> -controller.getLeftX(),
-                () -> new Rotation2d()));
-
-    // Switch to X pattern when X button is pressed
-    controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
+            () -> -driverController.getLeftY(),
+            () -> -driverController.getLeftX(),
+            () -> -driverController.getRightX()));
 
     // Reset gyro to 0° when B button is pressed
-    controller
-        .b()
+    driverController
+        .x()
         .onTrue(
             Commands.runOnce(
                     () ->
@@ -169,6 +227,45 @@ public class RobotContainer {
                             new Pose2d(drive.getPose().getTranslation(), new Rotation2d())),
                     drive)
                 .ignoringDisable(true));
+    driverController.a().onTrue(new MoveClimberOutCommand(climber));
+    driverController.b().onTrue(new MoveClimberInCommand(climber));
+    driverController.y().onTrue(new ToggleRatchetCommand(climber));
+
+    operatorController.a().onTrue(new RunCoralManipulatorCommand(arm, Constants.coralScoringSpeed));
+    operatorController.b().onTrue(intakeCoralCommand);
+    operatorController
+        .y()
+        .onTrue(
+            new MoveWholeArmToPositionCommand(
+                arm, Constants.L4ElevatorPosition, Constants.L4ArmAngle));
+    operatorController
+        .x()
+        .onTrue(
+            new MoveWholeArmToPositionCommand(
+                arm, Constants.L3ElevatorPosition, Constants.L2L3ArmAngle));
+    operatorController
+        .rightBumper()
+        .onTrue(
+            new MoveWholeArmToPositionCommand(
+                arm, Constants.L2ElevatorPosition, Constants.L2L3ArmAngle));
+    operatorController
+        .povDown()
+        .onTrue(new ScoreAlgaeManipulatorCommand(arm, Constants.algaeScoringSpeed));
+    operatorController.povDown().onFalse(new ScoreAlgaeManipulatorCommand(arm, 0));
+    operatorController.povRight().onTrue(intakeAlgaeL3);
+    operatorController.povLeft().onTrue(intakeAlgaeL2);
+    operatorController
+        .povUp()
+        .onTrue(
+            new MoveWholeArmToPositionCommand(
+                arm, Constants.bargeElevatorPosition, Constants.bargeAlgaeAngle));
+    operatorController.leftBumper().onTrue(intakeAlgaeLolipop);
+    operatorController
+        .leftTrigger()
+        .onTrue(new MoveWholeArmToPositionCommand(arm, 0, Constants.defaultArmAngle));
+    operatorController
+        .rightTrigger()
+        .onTrue(new MoveWholeArmToPositionCommand(arm, 0, Constants.climbArmAngle));
   }
 
   /**
